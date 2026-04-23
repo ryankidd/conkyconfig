@@ -16,7 +16,7 @@ local HEADER_SKIP = 515
 local CPU_H = 204
 local GPU_H = 192
 local MEM_H = 125
-local DISK_H = 280
+local DISK_H = 266
 local NET_H = 152
 
 local y1 = HEADER_SKIP
@@ -34,19 +34,20 @@ local SECTIONS = {
 }
 
 -- Vertical layout inside the containers block (must match conky.conf # containers).
-local CONT_VO_TOP = 12
-local CONT_HDR_LINE = 24
+local CONT_VO_TOP = 4
+local CONT_HDR_LINE = 4
 local CONT_VO_GAP = 4
 local CONT_ICON_ROW_TOP = CONT_VO_TOP + CONT_HDR_LINE + CONT_VO_GAP
-local CONT_CELL_H = 42
+local CONT_CELL_H = 64
 local CONT_CELL_PAD = 4
 local CONT_CELL_R = 8
 
--- Nerd icons: md-jellyfish (Jellyfin stand-in), md-emby (UTF-8 literals for all Lua versions).
+-- Nerd icons: md-jellyfish (Jellyfin), md-emby, md-sitemap (ComfyUI / node graph stand-in).
 local ICON_JF = '\243\176\188\129'
 local ICON_EM = '\243\176\154\180'
+local ICON_CUI = '\243\176\146\170'
 
-local dock_cache = { t = 0, jf = false, em = false }
+local dock_cache = { t = 0, jf = false, em = false, cui = false }
 
 local function docker_up(filter)
   local h = io.popen('docker ps -q --filter name=' .. filter .. ' 2>/dev/null | head -1', 'r')
@@ -66,6 +67,7 @@ local function dock_refresh()
   dock_cache.t = now
   dock_cache.jf = docker_up('jellyfin')
   dock_cache.em = docker_up('emby')
+  dock_cache.cui = docker_up('comfyui')
 end
 
 local function rounded_rectangle(cr, x, y, w, h, radius)
@@ -82,7 +84,7 @@ local function rounded_rectangle(cr, x, y, w, h, radius)
   cairo_close_path(cr)
 end
 
--- Under the text layer: two rounded cells (left two quarters of the row).
+-- Under the text layer: three rounded cells (first three quarter-columns).
 function conky_container_cells()
   if conky_window == nil then
     return
@@ -116,7 +118,7 @@ function conky_container_cells()
   cairo_set_line_join(cr, CAIRO_LINE_JOIN_ROUND)
   cairo_set_source_rgba(cr, 1, 1, 1, 0.38)
 
-  for col = 0, 1 do
+  for col = 0, 2 do
     local x = PAD_X + col * cell + CONT_CELL_PAD
     local w = cell - 2 * CONT_CELL_PAD
     rounded_rectangle(cr, x, y0, w, h, CONT_CELL_R)
@@ -169,16 +171,19 @@ function conky_section_borders()
   cairo_surface_destroy(cs)
 end
 
--- Text layer: two Nerd icons (md-jellyfish / md-emby), dim when container down.
+-- Text layer: Jellyfin, Emby, ComfyUI — dim when container down.
 function conky_media_container_icons()
   dock_refresh()
-  local cjf = dock_cache.jf and 'ffffff' or '7f7f7f'
-  local cem = dock_cache.em and 'ffffff' or '7f7f7f'
+  local cjf = dock_cache.jf and 'ffffff' or '5f5f5f'
+  local cem = dock_cache.em and 'ffffff' or '5f5f5f'
+  local ccu = dock_cache.cui and 'ffffff' or '5f5f5f'
   return string.format(
-    '${font Symbols Nerd Font Mono:size=34}${offset 26}${color %s}%s${offset 90}${color %s}%s${font Ubuntu:size=12}${color ffffff}',
+    '${font Symbols Nerd Font Mono:size=26}${offset 24}${color %s}${voffset 24}%s${offset 104}${color %s}%s${offset 100}${color %s}%s${font Ubuntu:size=12}${color ffffff}',
     cjf,
     ICON_JF,
     cem,
-    ICON_EM
+    ICON_EM,
+    ccu,
+    ICON_CUI
   )
 end
