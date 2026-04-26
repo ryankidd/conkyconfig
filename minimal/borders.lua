@@ -5,7 +5,7 @@ require('cairo')
 pcall(require, 'cairo_xlib')
 
 local CORNER_R = 10
-local PAD_X = 0
+local PAD_X = 40
 local LINE_A = 0.2
 local LINE_W = 1
 
